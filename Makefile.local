@@ -1,0 +1,12 @@
+# $YakumoLabs$
+# Build settings for ioquake3 (Illusion Arena)
+
+BASEGAME=baseia
+BUILD_CLIENT=1
+BUILD_SERVER=1
+BUILD_STANDALONE=1
+CLIENTBIN=illusionarena
+SERVERBIN=ia_ded
+VERSION=1.36+illusion
+
+

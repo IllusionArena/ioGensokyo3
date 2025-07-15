@@ -14,8 +14,8 @@ ifeq ($(shell uname -m), aarch64)
   COMPILE_ARCH=arm64
 endif
 
-ifeq ($(COMPILE_PLATFORM),sunos)
-  # Solaris uname and GNU uname differ
+ifneq (,$(findstring "$(COMPILE_PLATFORM)", "sunos" "netbsd"))
+  # Solaris/NetBSD uname and GNU uname differ
   COMPILE_ARCH=$(shell uname -p | sed -e 's/i.86/x86/')
 endif
 
@@ -79,6 +79,10 @@ ifeq ($(PLATFORM),mingw32)
 endif
 ifeq ($(PLATFORM),mingw64)
   MINGW=1
+endif
+
+ifeq ($(COMPILE_ARCH),i386)
+  COMPILE_ARCH=x86
 endif
 
 ifeq ($(COMPILE_ARCH),i86pc)
@@ -356,7 +360,7 @@ MKDIR=mkdir -p
 EXTRA_FILES=
 CLIENT_EXTRA_FILES=
 
-ifneq (,$(findstring "$(COMPILE_PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu"))
+ifneq (,$(findstring "$(COMPILE_PLATFORM)", "linux" "freebsd" "netbsd" "openbsd" "dragonfly" "gnu_kfreebsd" "kfreebsd-gnu" "gnu"))
   TOOLS_CFLAGS += -DARCH_STRING=\"$(COMPILE_ARCH)\"
 endif
 
@@ -625,16 +629,16 @@ ifeq ($(PLATFORM),darwin)
     RENDERER_LIBS += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
     CLIENT_EXTRA_FILES += $(MACLIBSDIR)/libSDL2-2.0.0.dylib
   else
-    BASE_CFLAGS += -I/Library/Frameworks/SDL2.framework/Headers
-    CLIENT_LIBS += -framework SDL2
-    RENDERER_LIBS += -framework SDL2
+    CLIENT_CFLAGS += $(SDL_CFLAGS)
+    CLIENT_LIBS += $(SDL_LIBS)
+    RENDERER_LIBS += $(SDL_LIBS)
   endif
 
   OPTIMIZE = $(OPTIMIZEVM) -ffast-math
 
   SHLIBEXT=dylib
   SHLIBCFLAGS=-fPIC -fno-common
-  SHLIBLDFLAGS=-dynamiclib $(LDFLAGS) -Wl,-U,_com_altivec
+  SHLIBLDFLAGS=-dynamiclib $(LDFLAGS)
 
   NOTSHLIBCFLAGS=-mdynamic-no-pic
 
@@ -957,12 +961,35 @@ ifeq ($(PLATFORM),netbsd)
 
   WARNINGS_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
   BASE_CFLAGS =
+  
+  CLIENT_CFLAGS += $(SDL_CFLAGS)
+  CLIENT_LIBS += $(SDL_LIBS)
+  RENDERER_LIBS += $(SDL_LIBS)
+
+  ifeq ($(USE_OPENAL),1)
+    ifeq ($(USE_OPENAL_DLOPEN),1)
+      CLIENT_LIBS += $(THREAD_LIBS) $(OPENAL_LIBS)
+    endif
+  endif
+
+  ifeq ($(USE_CURL),1)
+    CLIENT_CFLAGS += $(CURL_CFLAGS)
+    ifeq ($(USE_CURL_DLOPEN),1)
+      CLIENT_LIBS += $(CURL_LIBS)
+    endif
+  endif
+
+  ifeq ($(USE_MUMBLE),1)
+    CLIENT_LIBS += -lrt
+  endif
 
   ifeq ($(ARCH),x86)
     HAVE_VM_COMPILED=true
   endif
 
-  BUILD_CLIENT = 0
+  ifeq ($(ARCH),x86_64)
+    HAVE_VM_COMPILED=true
+  endif
 else # ifeq netbsd
 
 #############################################################################
